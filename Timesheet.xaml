@@ -1,0 +1,306 @@
+﻿<Window x:Class="specs.ams.TimesheetForms.Timesheet"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:av="http://schemas.codeplex.com/wpfcontrib/xaml/presentation" 
+    Title="SPECS AMS - Timesheet"
+    Height="700"
+    Width="1024"
+    xmlns:my="http://schemas.microsoft.com/wpf/2008/toolkit"
+    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+    xmlns:col="clr-namespace:System.Collections;assembly=mscorlib"
+    xmlns:cm="clr-namespace:System.ComponentModel;assembly=WindowsBase"   
+    xmlns:local="clr-namespace:specs.ams.TimesheetForms"
+    xmlns:uc="clr-namespace:specs.ams.UserControls"    
+    WindowStartupLocation="CenterScreen"
+    Loaded="Window_Loaded"
+    Closing="Window_Closing"
+    >
+    
+    <Window.Resources>
+        <ObjectDataProvider x:Key="workCodes" />
+        <ObjectDataProvider x:Key="expenseCodes" />
+        <ObjectDataProvider x:Key="fileComboValues" />
+        <Style TargetType="{x:Type my:DataGridCell}">
+            <Setter Property="IsTabStop" Value="False"></Setter>
+        </Style>
+    </Window.Resources>
+    
+    <DockPanel>
+        <WrapPanel DockPanel.Dock="Top">
+            <uc:SpecsLogo />
+
+            <Label>DayCard for:</Label>
+            <TextBox IsEnabled="False" Name="windowsLogin" MinWidth="90"/>
+            <Label>Start Date:</Label>
+            <my:DatePicker Name="sDate" Margin="2"/>
+            <Label>End Date:</Label>
+            <my:DatePicker Name="eDate" Margin="2"/>
+            <Button Style="{StaticResource SpecsButton}" Click="fetchButton_Click">
+                <AccessText>Fetch</AccessText>
+            </Button>
+        </WrapPanel>
+        
+        <WrapPanel DockPanel.Dock="Top">
+            <WrapPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
+                <Button Style="{StaticResource SpecsButton}" Click="addButton_Click">
+                    <AccessText>_Add New Record</AccessText>
+                </Button>
+                <Button Style="{StaticResource SpecsButton}" Click="deleteButton_Click">
+                    <AccessText>Deleted Selected Record</AccessText>
+                </Button>
+            </WrapPanel>
+        </WrapPanel>
+
+        <DockPanel DockPanel.Dock="Bottom" LastChildFill="False">
+            <Border BorderThickness="1" BorderBrush="LightGray">
+                <WrapPanel>
+                    <Label>As of:</Label>
+                    <my:DatePicker Name="asOftime" Margin="2"/>
+                    <Button Style="{StaticResource SpecsButton}">
+                        <AccessText>Branch Trial Fees</AccessText>
+                    </Button>
+                </WrapPanel>
+            </Border>
+            <Border BorderThickness="1" BorderBrush="LightGray">
+                <WrapPanel>
+                    <Button Style="{StaticResource SpecsButton}" Name="reportButton" Click="TimeSheetReport_Click">
+                        <AccessText>Timesheet Report</AccessText>
+                    </Button>
+                    <Button Style="{StaticResource SpecsButton}" Click="ExpenseReport_Click">
+                        <AccessText>Expense Report</AccessText>
+                    </Button>
+                </WrapPanel>
+            </Border>
+            <WrapPanel DockPanel.Dock="Bottom" HorizontalAlignment="Right">
+                <Button Style="{StaticResource SpecsButton}" Click="applyButton_Click">
+                    <AccessText>Save</AccessText>
+                </Button>
+                <Button Style="{StaticResource SpecsButton}" Click="okButton_Click" IsDefault="True" Name="okButton">
+                    <AccessText>Save and Close</AccessText>
+                </Button>
+                <Button
+                    Style="{StaticResource SpecsButton}"
+                    Name="cancelButton"
+                    Content="Close"
+                    IsCancel="True"
+                    />
+            </WrapPanel>
+        </DockPanel>
+
+        <DockPanel DockPanel.Dock="Bottom">
+            <Border BorderThickness="1" BorderBrush="LightGray">
+                <WrapPanel DockPanel.Dock="Left">
+                    <Button Style="{StaticResource SpecsButton}" Name="timeSheetSum" Click="timeSheetSum_Click">
+                        <AccessText>Sum</AccessText>
+                    </Button>
+                    <Label>Billable Hours:</Label>
+                    <TextBox MinWidth="50"
+                                      Name="billableHours"/>
+                    <Label>Total Hours:</Label>
+                    <TextBox MinWidth="50" Name="totHours"/>
+                    <Label>Total Expenses:</Label>
+                    <TextBox MinWidth="50" Name="totExpense"/>
+                </WrapPanel>
+            </Border>
+        </DockPanel>
+
+        <my:DataGrid
+                    Name="timeSheetDataGrid"
+                    AutoGenerateColumns="False"
+                    RowDetailsVisibilityMode="Visible"
+                    IsSynchronizedWithCurrentItem="True" 
+                    SelectionMode="Single"
+                    VerticalScrollBarVisibility="Visible"
+                    HorizontalScrollBarVisibility="Auto"
+                    CanUserAddRows="False"
+                    CanUserDeleteRows="False"
+                    Margin="2"
+                    >
+            <my:DataGrid.Columns>
+                
+                <my:DataGridTemplateColumn>
+                    <my:DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <Button Style="{StaticResource SpecsButton}"
+                                    Content="Same"
+                                    Click="sameButton_Click"
+                                    />
+                                <Button Style="{StaticResource SpecsButton}"
+                                    Content="Other"
+                                    Click="fileButton_Click"
+                                    />
+                            </StackPanel>
+                        </DataTemplate>
+                    </my:DataGridTemplateColumn.CellTemplate>
+                </my:DataGridTemplateColumn>
+                
+                <my:DataGridTemplateColumn Width="130" Header="File">
+                    <my:DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <ComboBox MinWidth="120"
+                                          ItemsSource="{Binding Source={StaticResource fileComboValues}}"
+                                          DisplayMemberPath="FileName"
+                                          SelectedValuePath="FileID"
+                                          SelectedValue="{Binding Path=FileID}"
+                                          SelectionChanged="fileNameCombo_Changed"
+                                          />
+                                <TextBox MinWidth="70"
+                                         IsReadOnly="True"
+                                         Text="{Binding Path=extra_FileNumber, Mode=OneWay}"
+                                         />
+                            </StackPanel>
+                        </DataTemplate>
+                    </my:DataGridTemplateColumn.CellTemplate>
+                </my:DataGridTemplateColumn>
+
+                <my:DataGridTemplateColumn Width="100">
+                    <my:DataGridTemplateColumn.Header>
+                        <StackPanel>
+                            <TextBlock>Hours</TextBlock>
+                            <TextBlock>Work Code</TextBlock>
+                        </StackPanel>
+                    </my:DataGridTemplateColumn.Header>
+                    <my:DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <TextBox MinWidth="50"
+                                         LostFocus="CalcFieldChanged"
+                                         Text="{Binding Path=Hours,StringFormat=\{0:N1\}}" 
+                                         />
+                                <ComboBox MinWidth="90"
+                                          ItemsSource="{Binding Source={StaticResource workCodes}}"
+                                          SelectedValuePath="ReferenceID"
+                                          DisplayMemberPath="Reference"
+                                          SelectedValue="{Binding Path=WorkCode}"
+                                          />
+                            </StackPanel>
+                        </DataTemplate>
+                    </my:DataGridTemplateColumn.CellTemplate>
+                </my:DataGridTemplateColumn>
+
+                <my:DataGridTemplateColumn Width="100">
+                    <my:DataGridTemplateColumn.Header>
+                        <StackPanel>
+                            <TextBlock>Expense</TextBlock>
+                            <TextBlock>Expense Code</TextBlock>
+                        </StackPanel>
+                    </my:DataGridTemplateColumn.Header>
+                    <my:DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <TextBox MinWidth="50" Text="{Binding Path=Expense,StringFormat=\{0:C\}}"
+                                         IsEnabled="{Binding Path=expr_NotInvoiced}"
+                                         LostFocus="CalcFieldChanged"
+                                         />
+                                <ComboBox MinWidth="90"
+                                          IsEnabled="{Binding Path=expr_NotInvoiced}"
+                                          ItemsSource="{Binding Source={StaticResource expenseCodes}}"
+                                          DisplayMemberPath="Reference"
+                                          SelectedValuePath="ReferenceID"
+                                          SelectedValue="{Binding Path=ExpenseCode}"
+                                          />
+                            </StackPanel>
+                        </DataTemplate>
+                    </my:DataGridTemplateColumn.CellTemplate>
+                </my:DataGridTemplateColumn>
+
+                <my:DataGridTemplateColumn>
+                    <my:DataGridTemplateColumn.Header>
+                        <StackPanel>
+                            <TextBlock>Paid by</TextBlock>
+                            <TextBlock>Employee</TextBlock>
+                        </StackPanel>
+                    </my:DataGridTemplateColumn.Header>
+                    <my:DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <WrapPanel HorizontalAlignment="Center">
+                                <CheckBox IsChecked="{Binding Path=PaidbyEmployee}" />
+                            </WrapPanel>
+                        </DataTemplate>
+                    </my:DataGridTemplateColumn.CellTemplate>
+                </my:DataGridTemplateColumn>
+
+                <my:DataGridTemplateColumn Header="Diary Date">
+                    <my:DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <my:DatePicker
+                                    SelectedDate="{Binding Path=DiaryDate}"
+                                    />
+                            </StackPanel>
+                        </DataTemplate>
+                    </my:DataGridTemplateColumn.CellTemplate>
+                </my:DataGridTemplateColumn>
+
+                <my:DataGridTemplateColumn>
+                    <my:DataGridTemplateColumn.Header>
+                        <StackPanel>
+                            <TextBlock>Non-</TextBlock>
+                            <TextBlock>Billable</TextBlock>
+                        </StackPanel>
+                    </my:DataGridTemplateColumn.Header>
+                    <my:DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <WrapPanel HorizontalAlignment="Center">
+                                <CheckBox
+                                    IsChecked="{Binding Path=NonBillable}"
+                                    LostFocus="CalcFieldChanged"
+                                    />
+                            </WrapPanel>
+                        </DataTemplate>
+                    </my:DataGridTemplateColumn.CellTemplate>
+                </my:DataGridTemplateColumn>
+                
+                <my:DataGridTemplateColumn Width="100" Header="Description">
+                    <my:DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox
+                                MinWidth="60"
+                                SpellCheck.IsEnabled="True"
+                                x:Name="tsDiary" 
+                                Text="{Binding DiaryDescription}"
+                                TextWrapping="Wrap" 
+                                AcceptsReturn="True" 
+                                VerticalScrollBarVisibility="Auto"
+                                MaxLines="3"
+                                />
+                        </DataTemplate>
+                    </my:DataGridTemplateColumn.CellTemplate>
+                </my:DataGridTemplateColumn>
+
+                <my:DataGridCheckBoxColumn
+                    Header="Reviewed"
+                    Binding="{Binding Path=ReviewedbyManager}"
+                    IsReadOnly="True"
+                    />
+
+                <my:DataGridCheckBoxColumn
+                    Header="Billed"
+                    Binding="{Binding Path=Billed}"
+                    IsReadOnly="True"
+                    />
+                
+                <my:DataGridTemplateColumn>
+                    <my:DataGridTemplateColumn.Header>
+                        <StackPanel>
+                            <TextBlock>Date Invoiced</TextBlock>
+                            <TextBlock>Bill Status</TextBlock>
+                        </StackPanel>
+                    </my:DataGridTemplateColumn.Header>
+                    <my:DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <TextBox Text="{Binding InvoiceDate, Mode=OneWay}" IsEnabled="False" />
+                                <TextBox Text="{Binding expr_FileType, Mode=OneWay}" IsEnabled="False" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </my:DataGridTemplateColumn.CellTemplate>
+                </my:DataGridTemplateColumn>
+
+            </my:DataGrid.Columns>
+        </my:DataGrid>
+
+    </DockPanel>
+</Window>
